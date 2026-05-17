@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { api } from '@/lib/api-client';
-import { SpcChart, Sparkline } from '@/components/charts/kpi-chart';
+import { SpcChart, Sparkline, Histogram, BeforeAfterChart } from '@/components/charts/kpi-chart';
 import { cn, formatNumber } from '@/lib/utils';
 import { Plus, TrendingUp, TrendingDown, Minus, Target, X } from 'lucide-react';
 
@@ -324,6 +324,40 @@ export default function CheckPage() {
                 </div>
               )}
             </div>
+
+            {/* Antes / Depois */}
+            {selectedKpiData.baseline != null && selectedKpiData.target != null && selectedKpiData.current != null && (
+              <div className="bg-white border border-[#E5E5E5] p-5">
+                <h3 className="text-[10px] font-semibold uppercase tracking-widest text-[#888888] mb-4">
+                  Comparativo Antes / Depois
+                </h3>
+                <BeforeAfterChart
+                  name={selectedKpiData.name}
+                  baseline={Number(selectedKpiData.baseline)}
+                  current={Number(selectedKpiData.current)}
+                  target={Number(selectedKpiData.target)}
+                  unit={selectedKpiData.unit}
+                  direction={selectedKpiData.direction}
+                />
+              </div>
+            )}
+
+            {/* Histogram */}
+            {selectedKpiData.measurements && selectedKpiData.measurements.length >= 5 && (
+              <div className="bg-white border border-[#E5E5E5] p-5">
+                <h3 className="text-[10px] font-semibold uppercase tracking-widest text-[#888888] mb-4">
+                  Histograma de Distribuição
+                </h3>
+                <Histogram
+                  values={selectedKpiData.measurements.map((m) => Number(m.value))}
+                  unit={selectedKpiData.unit}
+                  target={selectedKpiData.target != null ? Number(selectedKpiData.target) : undefined}
+                  mean={spcData?.mean}
+                  ucl={spcData?.ucl}
+                  lcl={spcData?.lcl}
+                />
+              </div>
+            )}
 
             {/* Measurement history */}
             <div className="bg-white border border-[#E5E5E5] p-5">

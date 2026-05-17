@@ -6,7 +6,9 @@ import { useRouter } from 'next/navigation';
 import { TopBar } from '@/components/layout/top-bar';
 import { api } from '@/lib/api-client';
 import { cn, formatDate, STATUS_LABELS, PRIORITY_LABELS, PHASE_LABELS } from '@/lib/utils';
-import { Plus, Search, Filter } from 'lucide-react';
+import { Plus, Search, Sparkles } from 'lucide-react';
+import { useAuthStore } from '@/store/auth.store';
+import { seedDemoProject } from '@/lib/demo-seed';
 
 interface Project {
   id: string;
@@ -42,8 +44,10 @@ const PHASE_COLORS: Record<string, string> = {
 
 export default function ProjectsPage() {
   const router = useRouter();
+  const user = useAuthStore((s) => s.user);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [seeding, setSeeding] = useState(false);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [total, setTotal] = useState(0);
@@ -66,6 +70,18 @@ export default function ProjectsPage() {
       setProjects([]);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleLoadDemo() {
+    if (!user) return;
+    setSeeding(true);
+    try {
+      const projId = seedDemoProject(user.id, user.organizationId);
+      await loadProjects();
+      router.push(`/projects/${projId}`);
+    } finally {
+      setSeeding(false);
     }
   }
 
@@ -127,15 +143,27 @@ export default function ProjectsPage() {
             {loading ? (
               <div className="p-8 text-center text-sm text-[#888888]">Carregando...</div>
             ) : filtered.length === 0 ? (
-              <div className="p-12 text-center">
-                <p className="text-sm text-[#555555] mb-4">Nenhum projeto encontrado</p>
-                <Link
-                  href="/projects/new"
-                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#111111] text-white text-xs font-medium hover:bg-[#333333] transition-colors"
-                >
-                  <Plus size={12} />
-                  Criar Projeto
-                </Link>
+              <div className="p-16 text-center">
+                <p className="text-sm font-medium text-[#111111] mb-1">Nenhum projeto ainda</p>
+                <p className="text-[13px] text-[#888888] mb-6">Crie seu primeiro projeto ou carregue um exemplo completo para explorar a plataforma.</p>
+                <div className="flex items-center justify-center gap-3">
+                  <Link
+                    href="/projects/new"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 border border-[#111111] text-[#111111] text-xs font-medium hover:bg-[#F4F4F4] transition-colors"
+                  >
+                    <Plus size={12} />
+                    Criar Projeto
+                  </Link>
+                  <button
+                    onClick={handleLoadDemo}
+                    disabled={seeding}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#111111] text-white text-xs font-medium hover:bg-[#333333] disabled:opacity-60 transition-colors"
+                  >
+                    <Sparkles size={12} />
+                    {seeding ? 'Carregando...' : 'Carregar Projeto Demo'}
+                  </button>
+                </div>
+                <p className="text-[11px] text-[#AAAAAA] mt-4">O projeto demo mostra um caso real de redução de lead time com todas as ferramentas preenchidas.</p>
               </div>
             ) : (
               <table className="w-full data-table">
