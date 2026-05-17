@@ -1,0 +1,29 @@
+{
+  "name": "pdca-tools",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "db:push": "turbo run db:push --filter=@pdca/database",
+    "db:migrate": "turbo run db:migrate --filter=@pdca/database",
+    "db:generate": "turbo run db:generate --filter=@pdca/database",
+    "db:studio": "turbo run db:studio --filter=@pdca/database",
+    "db:seed": "turbo run db:seed --filter=@pdca/database"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.0",
+    "typescript": "^5.4.0",
+    "@types/node": "^20.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@11.1.2"
+}

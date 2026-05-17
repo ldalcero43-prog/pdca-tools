@@ -1,0 +1,687 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── ENUMS ────────────────────────────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  MANAGER
+  FACILITATOR
+  MEMBER
+  VIEWER
+}
+
+enum ProjectStatus {
+  DRAFT
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+  ARCHIVED
+}
+
+enum ProjectPriority {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum PhaseType {
+  PLAN
+  DO
+  CHECK
+  ACT
+}
+
+enum ToolType {
+  SIPOC
+  VOC
+  CTQ
+  PROJECT_CHARTER
+  SWOT
+  GUT
+  PARETO
+  ISHIKAWA
+  FIVE_WHYS
+  FLOWCHART
+  VSM
+  FIVE_W2H
+  BENCHMARKING
+  KANO
+  FMEA
+  BRAINSTORMING
+  CAUSE_EFFECT_MATRIX
+  PROCESS_MAP
+  KANBAN
+  ACTION_PLAN
+  CHECKLIST
+  KPI_DASHBOARD
+  SPC_CHART
+  HISTOGRAM
+  RUN_CHART
+  BEFORE_AFTER
+  STANDARDIZATION
+  AUDIT
+  LESSONS_LEARNED
+  SOP
+  TRAINING
+}
+
+enum TaskStatus {
+  BACKLOG
+  TODO
+  IN_PROGRESS
+  IN_REVIEW
+  DONE
+  BLOCKED
+}
+
+enum TaskPriority {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  EXPORT
+  SHARE
+  APPROVE
+  REJECT
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum KpiType {
+  NUMBER
+  PERCENTAGE
+  CURRENCY
+  TIME_HOURS
+  TIME_DAYS
+  RATE
+  INDEX
+}
+
+enum KpiDirection {
+  HIGHER_IS_BETTER
+  LOWER_IS_BETTER
+  TARGET_IS_BETTER
+}
+
+// ─── CORE USER & AUTH ─────────────────────────────────────────────────────────
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  logoUrl   String?
+  plan      String   @default("starter")
+  settings  Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users        User[]
+  projects     Project[]
+  categories   ProjectCategory[]
+  areas        OrganizationArea[]
+  kpiTemplates KpiTemplate[]
+
+  @@map("organizations")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  avatarUrl     String?
+  passwordHash  String
+  role          Role      @default(MEMBER)
+  isActive      Boolean   @default(true)
+  emailVerified Boolean   @default(false)
+  lastLoginAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  organizationId String
+
+  organization       Organization    @relation(fields: [organizationId], references: [id])
+  refreshTokens      RefreshToken[]
+  ownedProjects      Project[]       @relation("ProjectOwner")
+  sponsoredProjects  Project[]       @relation("ProjectSponsor")
+  projectMembers     ProjectMember[]
+  assignedTasks      Task[]          @relation("TaskAssignee")
+  createdTasks       Task[]          @relation("TaskCreator")
+  comments           Comment[]
+  auditLogs          AuditLog[]
+  notifications      Notification[]
+  reviewedApprovals  Approval[]      @relation("ApprovalReviewer")
+  requestedApprovals Approval[]      @relation("ApprovalRequester")
+  createdToolData    ToolData[]      @relation("ToolDataCreator")
+
+  @@index([organizationId])
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  token     String    @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+// ─── PROJECT STRUCTURE ────────────────────────────────────────────────────────
+
+model ProjectCategory {
+  id    String @id @default(cuid())
+  name  String
+  color String @default("#111111")
+
+  organizationId String
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  projects     Project[]
+
+  @@unique([name, organizationId])
+  @@map("project_categories")
+}
+
+model OrganizationArea {
+  id       String  @id @default(cuid())
+  name     String
+  parentId String?
+
+  organizationId String
+
+  organization Organization      @relation(fields: [organizationId], references: [id])
+  parent       OrganizationArea?  @relation("AreaHierarchy", fields: [parentId], references: [id])
+  children     OrganizationArea[] @relation("AreaHierarchy")
+  projects     Project[]
+
+  @@unique([name, organizationId])
+  @@map("organization_areas")
+}
+
+model Project {
+  id          String          @id @default(cuid())
+  code        String
+  name        String
+  description String?
+  status      ProjectStatus   @default(DRAFT)
+  priority    ProjectPriority @default(MEDIUM)
+  methodology String          @default("PDCA")
+  currentPhase PhaseType      @default(PLAN)
+
+  categoryId String?
+  areaId     String?
+  ownerId    String
+  sponsorId  String?
+
+  organizationId String
+
+  // Goals
+  problemStatement String?
+  goals            String?
+  scope            String?
+  outOfScope       String?
+  targetDate       DateTime?
+  startDate        DateTime?
+  endDate          DateTime?
+
+  // Financial
+  estimatedSavings Decimal? @db.Decimal(15, 2)
+  actualSavings    Decimal? @db.Decimal(15, 2)
+  estimatedRoi     Decimal? @db.Decimal(8, 4)
+  actualRoi        Decimal? @db.Decimal(8, 4)
+  capexBudget      Decimal? @db.Decimal(15, 2)
+  opexBudget       Decimal? @db.Decimal(15, 2)
+  financialImpact  String?
+  slaHours         Int?
+
+  settings  Json    @default("{}")
+  isPublic  Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization      @relation(fields: [organizationId], references: [id])
+  category    ProjectCategory?   @relation(fields: [categoryId], references: [id])
+  area        OrganizationArea?  @relation(fields: [areaId], references: [id])
+  owner       User               @relation("ProjectOwner", fields: [ownerId], references: [id])
+  sponsor     User?              @relation("ProjectSponsor", fields: [sponsorId], references: [id])
+  members     ProjectMember[]
+  phases      ProjectPhase[]
+  kpis        ProjectKpi[]
+  attachments Attachment[]
+  comments    Comment[]
+  tags        ProjectTag[]
+  auditLogs   AuditLog[]
+  milestones  Milestone[]
+  approvals   Approval[]
+  toolData    ToolData[]
+  a3Reports   A3Report[]
+  tasks       Task[]
+
+  @@unique([code, organizationId])
+  @@index([organizationId, status])
+  @@index([ownerId])
+  @@map("projects")
+}
+
+model ProjectMember {
+  id        String   @id @default(cuid())
+  projectId String
+  userId    String
+  role      Role     @default(MEMBER)
+  joinedAt  DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@unique([projectId, userId])
+  @@map("project_members")
+}
+
+model ProjectTag {
+  id        String @id @default(cuid())
+  projectId String
+  tag       String
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, tag])
+  @@map("project_tags")
+}
+
+model ProjectPhase {
+  id                   String    @id @default(cuid())
+  projectId            String
+  phase                PhaseType
+  status               String    @default("NOT_STARTED")
+  startedAt            DateTime?
+  completedAt          DateTime?
+  notes                String?
+  completionPercentage Int       @default(0)
+
+  project  Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  toolData ToolData[]
+
+  @@unique([projectId, phase])
+  @@map("project_phases")
+}
+
+model Milestone {
+  id          String    @id @default(cuid())
+  projectId   String
+  name        String
+  description String?
+  dueDate     DateTime
+  completedAt DateTime?
+  phase       PhaseType
+  isBlocking  Boolean   @default(false)
+  dependsOnId String?
+
+  project   Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  dependsOn Milestone?  @relation("MilestoneDependency", fields: [dependsOnId], references: [id])
+  dependents Milestone[] @relation("MilestoneDependency")
+
+  @@map("milestones")
+}
+
+// ─── KPIs ─────────────────────────────────────────────────────────────────────
+
+model KpiTemplate {
+  id             String       @id @default(cuid())
+  name           String
+  description    String?
+  unit           String?
+  type           KpiType
+  direction      KpiDirection
+  formula        String?
+  organizationId String
+  isDefault      Boolean      @default(false)
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  projectKpis  ProjectKpi[]
+
+  @@map("kpi_templates")
+}
+
+model ProjectKpi {
+  id          String       @id @default(cuid())
+  projectId   String
+  templateId  String?
+  name        String
+  description String?
+  unit        String?
+  type        KpiType
+  direction   KpiDirection
+  baseline    Decimal?     @db.Decimal(15, 4)
+  target      Decimal?     @db.Decimal(15, 4)
+  current     Decimal?     @db.Decimal(15, 4)
+  formula     String?
+  phase       PhaseType
+  isFinancial Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  project      Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  template     KpiTemplate?  @relation(fields: [templateId], references: [id])
+  measurements KpiMeasurement[]
+
+  @@map("project_kpis")
+}
+
+model KpiMeasurement {
+  id         String   @id @default(cuid())
+  kpiId      String
+  value      Decimal  @db.Decimal(15, 4)
+  measuredAt DateTime
+  notes      String?
+  source     String?
+  createdAt  DateTime @default(now())
+
+  kpi ProjectKpi @relation(fields: [kpiId], references: [id], onDelete: Cascade)
+
+  @@index([kpiId, measuredAt])
+  @@map("kpi_measurements")
+}
+
+// ─── TOOL DATA ────────────────────────────────────────────────────────────────
+
+model ToolData {
+  id          String   @id @default(cuid())
+  projectId   String
+  phaseId     String?
+  toolType    ToolType
+  name        String   @default("Untitled")
+  data        Json
+  version     Int      @default(1)
+  isDraft     Boolean  @default(true)
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project   Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  phase     ProjectPhase? @relation(fields: [phaseId], references: [id])
+  createdBy User          @relation("ToolDataCreator", fields: [createdById], references: [id])
+  history   ToolDataHistory[]
+
+  @@index([projectId, toolType])
+  @@map("tool_data")
+}
+
+model ToolDataHistory {
+  id         String   @id @default(cuid())
+  toolDataId String
+  data       Json
+  version    Int
+  changedById String
+  changedAt  DateTime @default(now())
+
+  toolData ToolData @relation(fields: [toolDataId], references: [id], onDelete: Cascade)
+
+  @@map("tool_data_history")
+}
+
+// ─── TASKS & KANBAN ───────────────────────────────────────────────────────────
+
+model Task {
+  id             String       @id @default(cuid())
+  projectId      String
+  title          String
+  description    String?
+  status         TaskStatus   @default(BACKLOG)
+  priority       TaskPriority @default(MEDIUM)
+  assigneeId     String?
+  createdById    String
+  dueDate        DateTime?
+  startDate      DateTime?
+  completedAt    DateTime?
+  estimatedHours Decimal?     @db.Decimal(8, 2)
+  actualHours    Decimal?     @db.Decimal(8, 2)
+  parentId       String?
+  position       Int          @default(0)
+  phase          PhaseType    @default(DO)
+  isBlocking     Boolean      @default(false)
+  tags           String[]     @default([])
+  checklistItems Json         @default("[]")
+  evidenceLinks  String[]     @default([])
+  capex          Decimal?     @db.Decimal(15, 2)
+  opex           Decimal?     @db.Decimal(15, 2)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  project          Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignee         User?            @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  createdBy        User             @relation("TaskCreator", fields: [createdById], references: [id])
+  parent           Task?            @relation("TaskHierarchy", fields: [parentId], references: [id])
+  subtasks         Task[]           @relation("TaskHierarchy")
+  attachments      Attachment[]
+  comments         Comment[]
+  approvals        Approval[]
+  taskDependencies TaskDependency[] @relation("DependentTask")
+  blockedBy        TaskDependency[] @relation("BlockingTask")
+
+  @@index([projectId, status])
+  @@index([assigneeId])
+  @@map("tasks")
+}
+
+model TaskDependency {
+  id          String @id @default(cuid())
+  taskId      String
+  dependsOnId String
+
+  task      Task @relation("DependentTask", fields: [taskId], references: [id], onDelete: Cascade)
+  dependsOn Task @relation("BlockingTask", fields: [dependsOnId], references: [id])
+
+  @@unique([taskId, dependsOnId])
+  @@map("task_dependencies")
+}
+
+// ─── APPROVALS ────────────────────────────────────────────────────────────────
+
+model Approval {
+  id          String         @id @default(cuid())
+  projectId   String
+  taskId      String?
+  requesterId String
+  reviewerId  String
+  status      ApprovalStatus @default(PENDING)
+  title       String
+  description String?
+  reviewedAt  DateTime?
+  reviewNotes String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  project   Project @relation(fields: [projectId], references: [id])
+  task      Task?   @relation(fields: [taskId], references: [id])
+  requester User    @relation("ApprovalRequester", fields: [requesterId], references: [id])
+  reviewer  User    @relation("ApprovalReviewer", fields: [reviewerId], references: [id])
+
+  @@map("approvals")
+}
+
+// ─── COLLABORATION ────────────────────────────────────────────────────────────
+
+model Comment {
+  id        String   @id @default(cuid())
+  projectId String
+  taskId    String?
+  authorId  String
+  content   String
+  parentId  String?
+  isEdited  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project  Project  @relation(fields: [projectId], references: [id])
+  task     Task?    @relation(fields: [taskId], references: [id])
+  author   User     @relation(fields: [authorId], references: [id])
+  parent   Comment?  @relation("CommentThread", fields: [parentId], references: [id])
+  replies  Comment[] @relation("CommentThread")
+  reactions CommentReaction[]
+
+  @@map("comments")
+}
+
+model CommentReaction {
+  id        String @id @default(cuid())
+  commentId String
+  userId    String
+  emoji     String
+
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId, emoji])
+  @@map("comment_reactions")
+}
+
+model Attachment {
+  id         String   @id @default(cuid())
+  projectId  String
+  taskId     String?
+  fileName   String
+  fileKey    String   @unique
+  fileSize   Int
+  mimeType   String
+  uploadedAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id])
+  task    Task?   @relation(fields: [taskId], references: [id])
+
+  @@map("attachments")
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  title     String
+  body      String
+  type      String
+  link      String?
+  isRead    Boolean   @default(false)
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+// ─── AUDIT LOG (LGPD) ─────────────────────────────────────────────────────────
+
+model AuditLog {
+  id         String      @id @default(cuid())
+  userId     String?
+  projectId  String?
+  action     AuditAction
+  resource   String
+  resourceId String
+  changes    Json?
+  metadata   Json?
+  createdAt  DateTime    @default(now())
+
+  user    User?    @relation(fields: [userId], references: [id])
+  project Project? @relation(fields: [projectId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([projectId, createdAt])
+  @@index([resource, resourceId])
+  @@map("audit_logs")
+}
+
+// ─── A3 REPORTS ──────────────────────────────────────────────────────────────
+
+model A3Report {
+  id          String    @id @default(cuid())
+  projectId   String
+  title       String
+  version     Int       @default(1)
+  data        Json
+  fileKey     String?
+  pptxKey     String?
+  generatedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@map("a3_reports")
+}
+
+// ─── KNOWLEDGE BASE ───────────────────────────────────────────────────────────
+
+model KnowledgeArticle {
+  id          String    @id @default(cuid())
+  title       String
+  content     String
+  category    String
+  tags        String[]  @default([])
+  toolType    ToolType?
+  projectId   String?
+  isPublished Boolean   @default(false)
+  viewCount   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("knowledge_articles")
+}
+
+model SopDocument {
+  id            String    @id @default(cuid())
+  projectId     String
+  title         String
+  content       String
+  version       String    @default("1.0")
+  effectiveDate DateTime?
+  fileKey       String?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("sop_documents")
+}
+
+// ─── AI SESSIONS ─────────────────────────────────────────────────────────────
+
+model AiSession {
+  id        String   @id @default(cuid())
+  projectId String
+  userId    String
+  type      String
+  prompt    String
+  response  Json
+  tokensUsed Int?
+  modelUsed String?
+  createdAt DateTime @default(now())
+
+  @@index([projectId])
+  @@map("ai_sessions")
+}
