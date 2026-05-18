@@ -212,7 +212,7 @@ const ROUTES: Array<{ method: string; pattern: string; fn: Handler }> = [
       methodology: body.methodology ?? 'PDCA',
       priority: body.priority ?? 'MEDIUM',
       status: 'ACTIVE',
-      currentPhase: 'PLAN',
+      currentPhase: body.methodology === 'DMAIC' ? 'DEFINE' : 'PLAN',
       problemStatement: body.problemStatement ?? null,
       goals: body.goals ?? null,
       scope: body.scope ?? null,
@@ -228,7 +228,11 @@ const ROUTES: Array<{ method: string; pattern: string; fn: Handler }> = [
     };
     const projects = DB.projects(); projects.push(project); DB.save.projects(projects);
     const phases = DB.phases();
-    ['PLAN', 'DO', 'CHECK', 'ACT'].forEach((phase, i) => {
+    const isDmaic = body.methodology === 'DMAIC';
+    const phaseList = isDmaic
+      ? ['DEFINE', 'MEASURE', 'ANALYZE', 'IMPROVE', 'CONTROL']
+      : ['PLAN', 'DO', 'CHECK', 'ACT'];
+    phaseList.forEach((phase, i) => {
       phases.push({ id: uid(), projectId: project.id, phase, status: i === 0 ? 'IN_PROGRESS' : 'NOT_STARTED', completionPercentage: 0, createdAt: ts() });
     });
     DB.save.phases(phases);
@@ -285,18 +289,24 @@ const ROUTES: Array<{ method: string; pattern: string; fn: Handler }> = [
   }},
 
   { method: 'PUT', pattern: '/projects/:id/tools/:toolType', fn: ([id, toolType], body) => {
-    const PHASE_MAP: Record<string, string> = {
-      // PLAN — diagnosis & process mapping
+    const PDCA_PHASE_MAP: Record<string, string> = {
       FIVE_WHYS: 'PLAN', ISHIKAWA: 'PLAN', SWOT: 'PLAN',
       SIPOC: 'PLAN', PARETO: 'PLAN', FLOWCHART: 'PLAN',
-      // DO — action planning & execution
       GUT_MATRIX: 'DO', FIVE_W2H: 'DO', FMEA: 'DO', KANBAN: 'DO',
-      // ACT
       ACT_STANDARDIZATION: 'ACT',
     };
+    const DMAIC_PHASE_MAP: Record<string, string> = {
+      SIPOC: 'DEFINE', FLOWCHART: 'DEFINE', SWOT: 'DEFINE',
+      PARETO: 'MEASURE',
+      FIVE_WHYS: 'ANALYZE', ISHIKAWA: 'ANALYZE', FMEA: 'ANALYZE',
+      GUT_MATRIX: 'IMPROVE', FIVE_W2H: 'IMPROVE', KANBAN: 'IMPROVE',
+      ACT_STANDARDIZATION: 'CONTROL',
+    };
+    const proj = DB.projects().find((p) => p.id === id);
+    const phaseMap = proj?.methodology === 'DMAIC' ? DMAIC_PHASE_MAP : PDCA_PHASE_MAP;
     const tools = DB.tools();
     const idx = tools.findIndex((t) => t.projectId === id && t.toolType === toolType);
-    const item = { id: idx >= 0 ? tools[idx].id : uid(), projectId: id, toolType, phase: PHASE_MAP[toolType] ?? 'PLAN', data: body.data, status: 'IN_PROGRESS', updatedAt: ts() };
+    const item = { id: idx >= 0 ? tools[idx].id : uid(), projectId: id, toolType, phase: phaseMap[toolType] ?? 'PLAN', data: body.data, status: 'IN_PROGRESS', updatedAt: ts() };
     if (idx >= 0) tools[idx] = item; else tools.push(item);
     DB.save.tools(tools);
     return item;

@@ -13,7 +13,25 @@ const STEPS = [
   { id: 3, label: 'Timeline & Financeiro' },
 ];
 
-const METHODOLOGIES = ['PDCA', 'DMAIC', 'KAIZEN', 'LEAN', 'BPM'];
+const MAIN_METHODOLOGIES = [
+  {
+    value: 'PDCA',
+    label: 'PDCA',
+    subtitle: 'Plan → Do → Check → Act',
+    description: 'Ciclo clássico de melhoria contínua. Ideal para projetos de eliminação de desperdícios, padronização e melhoria incremental de processos.',
+    phases: ['Plan', 'Do', 'Check', 'Act'],
+    phaseColors: ['text-[#2563EB]', 'text-[#D97706]', 'text-[#16A34A]', 'text-[#7C3AED]'],
+  },
+  {
+    value: 'DMAIC',
+    label: 'DMAIC',
+    subtitle: 'Define → Measure → Analyze → Improve → Control',
+    description: 'Metodologia Six Sigma estruturada e orientada a dados. Indicada quando há necessidade de análise estatística e controle rigoroso de variações de processo.',
+    phases: ['Define', 'Measure', 'Analyze', 'Improve', 'Control'],
+    phaseColors: ['text-[#2563EB]', 'text-[#7C3AED]', 'text-[#D97706]', 'text-[#16A34A]', 'text-[#111111]'],
+  },
+];
+const OTHER_METHODOLOGIES = ['KAIZEN', 'LEAN', 'BPM'];
 const PRIORITIES = [
   { value: 'CRITICAL', label: 'Crítico' },
   { value: 'HIGH', label: 'Alto' },
@@ -140,19 +158,64 @@ export default function NewProjectPage() {
                     className="field-input resize-none"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="field-label">Metodologia</label>
-                    <select value={form.methodology} onChange={(e) => update('methodology', e.target.value)} className="field-input">
-                      {METHODOLOGIES.map((m) => <option key={m}>{m}</option>)}
-                    </select>
+                <div>
+                  <label className="field-label">Metodologia</label>
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    {MAIN_METHODOLOGIES.map((m) => (
+                      <button
+                        key={m.value}
+                        type="button"
+                        onClick={() => update('methodology', m.value)}
+                        className={cn(
+                          'text-left p-4 border transition-all',
+                          form.methodology === m.value
+                            ? 'border-[#111111] bg-[#111111] text-white'
+                            : 'border-[#E5E5E5] bg-white hover:border-[#AAAAAA]',
+                        )}
+                      >
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-sm font-bold tracking-tight">{m.label}</span>
+                          <div className="flex gap-1">
+                            {m.phases.map((p) => (
+                              <span
+                                key={p}
+                                className={cn('text-[9px] font-semibold px-1 py-0.5 border',
+                                  form.methodology === m.value ? 'border-white/30 text-white/80' : 'border-[#E5E5E5] text-[#888888]'
+                                )}
+                              >
+                                {p.slice(0, 3).toUpperCase()}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        <p className={cn('text-[11px] leading-relaxed', form.methodology === m.value ? 'text-white/70' : 'text-[#888888]')}>
+                          {m.description}
+                        </p>
+                      </button>
+                    ))}
                   </div>
-                  <div>
-                    <label className="field-label">Prioridade</label>
-                    <select value={form.priority} onChange={(e) => update('priority', e.target.value)} className="field-input">
-                      {PRIORITIES.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
-                    </select>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-[#888888]">Outros:</span>
+                    {OTHER_METHODOLOGIES.map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => update('methodology', m)}
+                        className={cn(
+                          'text-[11px] px-2.5 py-1 border transition-colors',
+                          form.methodology === m ? 'border-[#111111] bg-[#111111] text-white' : 'border-[#E5E5E5] text-[#555555] hover:border-[#AAAAAA]',
+                        )}
+                      >
+                        {m}
+                      </button>
+                    ))}
                   </div>
+                </div>
+                <div>
+                  <label className="field-label">Prioridade</label>
+                  <select value={form.priority} onChange={(e) => update('priority', e.target.value)} className="field-input">
+                    {PRIORITIES.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+                  </select>
                 </div>
               </div>
             )}

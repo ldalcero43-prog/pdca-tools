@@ -8,6 +8,7 @@ import { IshikawaEditor } from '@/components/tools/ishikawa/ishikawa-editor';
 import { SwotEditor } from '@/components/tools/swot/swot-editor';
 import { SipocEditor } from '@/components/tools/sipoc/sipoc-editor';
 import { FlowchartEditor } from '@/components/tools/flowchart/flowchart-editor';
+import { ParetoEditor } from '@/components/tools/pareto/pareto-editor';
 import { cn } from '@/lib/utils';
 import { ArrowLeft, Plus, CheckCircle2, Clock, ChevronRight, Zap } from 'lucide-react';
 
@@ -73,6 +74,7 @@ const TOOL_EDITORS: Record<string, React.ComponentType<{ projectId: string; tool
   SWOT: SwotEditor,
   SIPOC: SipocEditor,
   FLOWCHART: FlowchartEditor,
+  PARETO: ParetoEditor,
 };
 
 const DIFFICULTY_LABELS = { beginner: 'Iniciante', intermediate: 'Intermediário', advanced: 'Avançado' };

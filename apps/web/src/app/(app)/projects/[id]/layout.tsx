@@ -16,12 +16,23 @@ interface Project {
   methodology: string;
 }
 
-const PHASE_TABS = [
+const PDCA_TABS = [
   { id: 'overview', label: 'Visão Geral', href: '' },
-  { id: 'plan', label: 'Plan', href: '/plan', phase: 'PLAN', color: 'text-[#2563EB]' },
-  { id: 'do', label: 'Do', href: '/do', phase: 'DO', color: 'text-[#D97706]' },
-  { id: 'check', label: 'Check', href: '/check', phase: 'CHECK', color: 'text-[#16A34A]' },
-  { id: 'act', label: 'Act', href: '/act', phase: 'ACT', color: 'text-[#7C3AED]' },
+  { id: 'plan', label: 'Plan', href: '/plan', color: 'text-[#2563EB]' },
+  { id: 'do', label: 'Do', href: '/do', color: 'text-[#D97706]' },
+  { id: 'check', label: 'Check', href: '/check', color: 'text-[#16A34A]' },
+  { id: 'act', label: 'Act', href: '/act', color: 'text-[#7C3AED]' },
+  { id: 'timeline', label: 'Timeline', href: '/timeline' },
+  { id: 'reports', label: 'Relatórios', href: '/reports' },
+];
+
+const DMAIC_TABS = [
+  { id: 'overview', label: 'Visão Geral', href: '' },
+  { id: 'define', label: 'Define', href: '/define', color: 'text-[#2563EB]' },
+  { id: 'measure', label: 'Measure', href: '/measure', color: 'text-[#7C3AED]' },
+  { id: 'analyze', label: 'Analyze', href: '/analyze', color: 'text-[#D97706]' },
+  { id: 'improve', label: 'Improve', href: '/improve', color: 'text-[#16A34A]' },
+  { id: 'control', label: 'Control', href: '/control', color: 'text-[#111111]' },
   { id: 'timeline', label: 'Timeline', href: '/timeline' },
   { id: 'reports', label: 'Relatórios', href: '/reports' },
 ];
@@ -131,7 +142,7 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
 
         {/* Phase tabs */}
         <nav className="flex items-center gap-0 -mb-px">
-          {PHASE_TABS.map((tab) => (
+          {(project?.methodology === 'DMAIC' ? DMAIC_TABS : PDCA_TABS).map((tab) => (
             <Link
               key={tab.id}
               href={basePath + tab.href}

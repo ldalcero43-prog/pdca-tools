@@ -93,13 +93,22 @@ interface NewTaskFormProps {
 
 function NewTaskForm({ status, projectId, onCreated, onCancel }: NewTaskFormProps) {
   const [title, setTitle] = useState('');
+  const [dueDate, setDueDate] = useState('');
+  const [priority, setPriority] = useState('MEDIUM');
+  const [assigneeName, setAssigneeName] = useState('');
   const [loading, setLoading] = useState(false);
 
   async function submit() {
     if (!title.trim()) return;
     setLoading(true);
     try {
-      const task = await api.post<Task>(`/projects/${projectId}/tasks`, { title, status });
+      const task = await api.post<Task>(`/projects/${projectId}/tasks`, {
+        title,
+        status,
+        priority,
+        dueDate: dueDate || undefined,
+        assigneeName: assigneeName || undefined,
+      });
       onCreated(task);
     } catch (err) {
       console.error(err);
@@ -109,19 +118,46 @@ function NewTaskForm({ status, projectId, onCreated, onCancel }: NewTaskFormProp
   }
 
   return (
-    <div className="bg-white border border-[#111111] p-3">
+    <div className="bg-white border border-[#111111] p-3 space-y-2">
       <input
         autoFocus
         value={title}
         onChange={(e) => setTitle(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') submit();
-          if (e.key === 'Escape') onCancel();
-        }}
-        placeholder="Título da tarefa..."
-        className="w-full text-xs text-[#111111] placeholder-[#AAAAAA] bg-transparent focus:outline-none mb-2"
+        onKeyDown={(e) => { if (e.key === 'Escape') onCancel(); }}
+        placeholder="Título da ação..."
+        className="w-full text-xs font-medium text-[#111111] placeholder-[#AAAAAA] bg-transparent focus:outline-none"
       />
-      <div className="flex items-center gap-2">
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="block text-[9px] uppercase tracking-widest text-[#AAAAAA] mb-0.5">Prazo *</label>
+          <input
+            type="date"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+            className="w-full text-[11px] text-[#111111] bg-transparent border-b border-[#E5E5E5] focus:border-[#111111] focus:outline-none py-0.5 transition-colors"
+          />
+        </div>
+        <div>
+          <label className="block text-[9px] uppercase tracking-widest text-[#AAAAAA] mb-0.5">Prioridade</label>
+          <select
+            value={priority}
+            onChange={(e) => setPriority(e.target.value)}
+            className="w-full text-[11px] text-[#111111] bg-transparent border-b border-[#E5E5E5] focus:border-[#111111] focus:outline-none py-0.5 transition-colors appearance-none"
+          >
+            <option value="CRITICAL">Crítico</option>
+            <option value="HIGH">Alto</option>
+            <option value="MEDIUM">Médio</option>
+            <option value="LOW">Baixo</option>
+          </select>
+        </div>
+      </div>
+      <input
+        value={assigneeName}
+        onChange={(e) => setAssigneeName(e.target.value)}
+        placeholder="Responsável..."
+        className="w-full text-[11px] text-[#111111] placeholder-[#AAAAAA] bg-transparent border-b border-[#E5E5E5] focus:border-[#111111] focus:outline-none py-0.5 transition-colors"
+      />
+      <div className="flex items-center gap-2 pt-1">
         <button
           onClick={submit}
           disabled={loading || !title.trim()}
@@ -129,10 +165,7 @@ function NewTaskForm({ status, projectId, onCreated, onCancel }: NewTaskFormProp
         >
           {loading ? '...' : 'Criar'}
         </button>
-        <button
-          onClick={onCancel}
-          className="text-[11px] text-[#888888] hover:text-[#555555] transition-colors"
-        >
+        <button onClick={onCancel} className="text-[11px] text-[#888888] hover:text-[#555555] transition-colors">
           Cancelar
         </button>
       </div>
