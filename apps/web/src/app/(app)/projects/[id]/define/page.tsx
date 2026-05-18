@@ -173,8 +173,8 @@ export default function DefinePage() {
                   >
                     <div className="flex items-start justify-between mb-1.5">
                       <span className="text-xs font-semibold text-[#111111]">{tool.name}</span>
-                      {isDone ? <CheckCircle2 size={13} className="text-[#16A34A] shrink-0" />
-                        : isProgress ? <Clock size={13} className="text-[#D97706] shrink-0" />
+                      {isDone ? <CheckCircle2 size={13} className="text-[#16A34A] shrink-0 group-hover:opacity-0 transition-opacity" />
+                        : isProgress ? <Clock size={13} className="text-[#D97706] shrink-0 group-hover:opacity-0 transition-opacity" />
                         : null}
                     </div>
                     <p className="text-[11px] text-[#888888] leading-relaxed">{tool.description}</p>

@@ -210,7 +210,7 @@ export default function PlanPage() {
                           </span>
                         )}
                       </div>
-                      <ChevronRight size={12} className="text-[#AAAAAA] shrink-0 group-hover:text-[#111111] transition-colors" />
+                      <ChevronRight size={12} className="text-[#AAAAAA] shrink-0 group-hover:opacity-0 transition-opacity" />
                     </div>
                     <p className="text-[11px] text-[#888888] leading-relaxed mb-3 line-clamp-2">{tool.description}</p>
                     <div className="flex items-center justify-between">
