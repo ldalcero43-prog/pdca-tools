@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'PDCA Tools — Gestão de Melhoria Contínua',
+  title: 'Plannr — Gestão de Melhoria Contínua',
   description: 'Plataforma enterprise para gestão de projetos PDCA, Lean e Six Sigma',
   robots: { index: false, follow: false },
 };

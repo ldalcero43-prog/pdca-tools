@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { api } from '@/lib/api-client';
 import { useAuthStore } from '@/store/auth.store';
 
@@ -39,11 +40,9 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] py-12">
       <div className="w-full max-w-sm">
         <div className="mb-10 text-center">
-          <div className="inline-flex items-center gap-2 mb-2">
-            <div className="w-6 h-6 bg-[#111111] rounded-sm flex items-center justify-center">
-              <span className="text-white text-xs font-bold">P</span>
-            </div>
-            <span className="text-lg font-semibold text-[#111111] tracking-tight">PDCA Tools</span>
+          <div className="inline-flex items-center gap-2.5 mb-2">
+            <Image src="/logo-plannr.png" alt="Plannr" width={32} height={32} className="rounded-sm" />
+            <span className="text-xl font-semibold text-[#111111] tracking-tight">Plannr</span>
           </div>
           <p className="text-sm text-[#555555]">Criar conta — acesso 14 dias grátis</p>
         </div>

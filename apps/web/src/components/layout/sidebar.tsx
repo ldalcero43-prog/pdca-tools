@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/auth.store';
 import { useUiStore } from '@/store/ui.store';
@@ -52,15 +53,13 @@ export function Sidebar() {
       {/* Logo */}
       <div className={cn('flex items-center h-[52px] px-4 border-b border-[#E5E5E5]', sidebarCollapsed && 'justify-center px-0')}>
         {sidebarCollapsed ? (
-          <div className="w-7 h-7 bg-[#111111] rounded-sm flex items-center justify-center">
-            <span className="text-white text-xs font-bold">P</span>
-          </div>
+          <Link href="/dashboard">
+            <Image src="/logo-plannr.png" alt="Plannr" width={28} height={28} className="rounded-sm" />
+          </Link>
         ) : (
           <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-[#111111] rounded-sm flex items-center justify-center shrink-0">
-              <span className="text-white text-xs font-bold">P</span>
-            </div>
-            <span className="text-sm font-semibold text-[#111111] tracking-tight">PDCA Tools</span>
+            <Image src="/logo-plannr.png" alt="Plannr" width={24} height={24} className="rounded-sm shrink-0" />
+            <span className="text-sm font-semibold text-[#111111] tracking-tight">Plannr</span>
           </Link>
         )}
       </div>
