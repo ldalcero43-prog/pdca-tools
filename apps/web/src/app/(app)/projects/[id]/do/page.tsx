@@ -93,6 +93,17 @@ export default function DoPage() {
     }
   }
 
+  async function handleRemoveTool(toolType: string) {
+    const tool = DO_TOOLS.find((t) => t.type === toolType);
+    if (!confirm(`Remover "${tool?.name}"? Os dados salvos serão perdidos.`)) return;
+    try {
+      await api.delete(`/projects/${projectId}/tools/${toolType}`);
+      setActivatedTools((prev) => { const s = new Set(prev); s.delete(toolType); return s; });
+      setToolDataMap((prev) => { const m = { ...prev }; delete m[toolType]; return m; });
+      if (tab === toolType) setTab('kanban');
+    } catch (err) { console.error(err); }
+  }
+
   const handleTaskUpdated = (updated: Task) =>
     setTasks((prev) => prev.map((t) => t.id === updated.id ? updated : t));
   const handleTaskDeleted = (taskId: string) =>
@@ -128,28 +139,38 @@ export default function DoPage() {
           const isActive = activatedTools.has(tool.type);
           const status = toolStatuses[tool.type];
           return (
-            <button
-              key={tool.type}
-              onClick={() => isActive ? setTab(tool.type as DoTab) : handleActivateTool(tool.type)}
-              disabled={activating === tool.type}
-              className={cn(
-                'px-4 py-3 text-xs font-medium border-b-2 transition-colors -mb-px flex items-center gap-1.5',
-                tab === tool.type
-                  ? 'border-[#111111] text-[#111111]'
-                  : isActive
-                  ? 'border-transparent text-[#888888] hover:text-[#555555]'
-                  : 'border-transparent text-[#AAAAAA] hover:text-[#888888]',
+            <span key={tool.type} className="flex items-stretch">
+              <button
+                onClick={() => isActive ? setTab(tool.type as DoTab) : handleActivateTool(tool.type)}
+                disabled={activating === tool.type}
+                className={cn(
+                  'px-4 py-3 text-xs font-medium border-b-2 transition-colors -mb-px flex items-center gap-1.5',
+                  tab === tool.type
+                    ? 'border-[#111111] text-[#111111]'
+                    : isActive
+                    ? 'border-transparent text-[#888888] hover:text-[#555555]'
+                    : 'border-transparent text-[#AAAAAA] hover:text-[#888888]',
+                )}
+              >
+                {!isActive && <Plus size={10} />}
+                {tool.name}
+                {isActive && (status === 'COMPLETED' || status === 'DONE') && (
+                  <CheckCircle2 size={10} className="text-[#16A34A]" />
+                )}
+                {isActive && status === 'IN_PROGRESS' && (
+                  <Clock size={10} className="text-[#D97706]" />
+                )}
+              </button>
+              {isActive && (
+                <button
+                  onClick={() => handleRemoveTool(tool.type)}
+                  title="Remover ferramenta"
+                  className="px-1 py-3 -mb-px text-[#CCCCCC] hover:text-[#DC2626] transition-colors border-b-2 border-transparent text-xs leading-none"
+                >
+                  ×
+                </button>
               )}
-            >
-              {!isActive && <Plus size={10} />}
-              {tool.name}
-              {isActive && (status === 'COMPLETED' || status === 'DONE') && (
-                <CheckCircle2 size={10} className="text-[#16A34A]" />
-              )}
-              {isActive && status === 'IN_PROGRESS' && (
-                <Clock size={10} className="text-[#D97706]" />
-              )}
-            </button>
+            </span>
           );
         })}
 

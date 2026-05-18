@@ -10,7 +10,7 @@ import { SipocEditor } from '@/components/tools/sipoc/sipoc-editor';
 import { FlowchartEditor } from '@/components/tools/flowchart/flowchart-editor';
 import { ParetoEditor } from '@/components/tools/pareto/pareto-editor';
 import { cn } from '@/lib/utils';
-import { ArrowLeft, Plus, CheckCircle2, Clock, ChevronRight, Zap } from 'lucide-react';
+import { ArrowLeft, Plus, CheckCircle2, Clock, ChevronRight, Zap, Trash2 } from 'lucide-react';
 
 interface ToolDef {
   type: string;
@@ -128,20 +128,38 @@ export default function PlanPage() {
     }
   }
 
+  async function handleRemove(toolType: string) {
+    const tool = PLAN_TOOLS.find((t) => t.type === toolType);
+    if (!confirm(`Remover "${tool?.name}"? Os dados salvos serão perdidos.`)) return;
+    try {
+      await api.delete(`/projects/${projectId}/tools/${toolType}`);
+      setActivatedTools((prev) => { const s = new Set(prev); s.delete(toolType); return s; });
+      setToolDataMap((prev) => { const m = { ...prev }; delete m[toolType]; return m; });
+      if (selectedTool === toolType) setSelectedTool(null);
+    } catch (err) { console.error(err); }
+  }
+
   const ToolEditor = selectedTool ? TOOL_EDITORS[selectedTool] : null;
+  const selectedToolDef = selectedTool ? PLAN_TOOLS.find((t) => t.type === selectedTool) : null;
 
   if (loading) return <div className="p-8 text-sm text-[#888888]">Carregando ferramentas...</div>;
 
   if (selectedTool && ToolEditor) {
     return (
       <div className="flex flex-col h-full">
-        <div className="px-6 py-2.5 border-b border-[#E5E5E5] bg-[#FAFAFA] shrink-0">
+        <div className="flex items-center justify-between px-6 py-2.5 border-b border-[#E5E5E5] bg-[#FAFAFA] shrink-0">
           <button
             onClick={() => setSelectedTool(null)}
             className="flex items-center gap-1.5 text-xs text-[#555555] hover:text-[#111111] transition-colors"
           >
             <ArrowLeft size={12} />
             Voltar às ferramentas
+          </button>
+          <button
+            onClick={() => handleRemove(selectedTool)}
+            className="flex items-center gap-1 text-[11px] text-[#AAAAAA] hover:text-[#DC2626] transition-colors"
+          >
+            <Trash2 size={11} /> Remover ferramenta
           </button>
         </div>
         <div className="flex-1 min-h-0">
@@ -172,37 +190,48 @@ export default function PlanPage() {
               const isDone = status === 'COMPLETED' || status === 'DONE';
               const isProgress = status === 'IN_PROGRESS';
               return (
-                <button
+                <div
                   key={tool.type}
-                  onClick={() => setSelectedTool(tool.type)}
                   className={cn(
-                    'text-left p-4 bg-white border transition-all hover:border-[#111111] hover:shadow-sm group',
+                    'relative group bg-white border transition-all hover:border-[#111111] hover:shadow-sm',
                     isDone ? 'border-[#16A34A]/40' : isProgress ? 'border-[#D97706]/40' : 'border-[#E5E5E5]',
                   )}
                 >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-[#111111]">{tool.name}</span>
-                      {tool.recommended && (
-                        <span className="flex items-center gap-0.5 text-[10px] font-medium text-[#D97706] bg-[#FFFBEB] px-1.5 py-0.5 border border-[#FDE68A]">
-                          <Zap size={9} /> Recom.
-                        </span>
-                      )}
+                  <button
+                    onClick={() => setSelectedTool(tool.type)}
+                    className="w-full text-left p-4"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold text-[#111111]">{tool.name}</span>
+                        {tool.recommended && (
+                          <span className="flex items-center gap-0.5 text-[10px] font-medium text-[#D97706] bg-[#FFFBEB] px-1.5 py-0.5 border border-[#FDE68A]">
+                            <Zap size={9} /> Recom.
+                          </span>
+                        )}
+                      </div>
+                      <ChevronRight size={12} className="text-[#AAAAAA] shrink-0 group-hover:text-[#111111] transition-colors" />
                     </div>
-                    <ChevronRight size={12} className="text-[#AAAAAA] shrink-0 group-hover:text-[#111111] transition-colors" />
-                  </div>
-                  <p className="text-[11px] text-[#888888] leading-relaxed mb-3 line-clamp-2">{tool.description}</p>
-                  <div className="flex items-center justify-between">
-                    <span className={cn('text-[10px] font-medium', DIFFICULTY_COLORS[tool.difficulty])}>
-                      {DIFFICULTY_LABELS[tool.difficulty]}
-                    </span>
-                    <span className={cn('text-[10px] font-medium flex items-center gap-0.5',
-                      isDone ? 'text-[#16A34A]' : isProgress ? 'text-[#D97706]' : 'text-[#AAAAAA]',
-                    )}>
-                      {isDone ? <><CheckCircle2 size={10} /> Concluído</> : isProgress ? <><Clock size={10} /> Em andamento</> : 'Não iniciado'}
-                    </span>
-                  </div>
-                </button>
+                    <p className="text-[11px] text-[#888888] leading-relaxed mb-3 line-clamp-2">{tool.description}</p>
+                    <div className="flex items-center justify-between">
+                      <span className={cn('text-[10px] font-medium', DIFFICULTY_COLORS[tool.difficulty])}>
+                        {DIFFICULTY_LABELS[tool.difficulty]}
+                      </span>
+                      <span className={cn('text-[10px] font-medium flex items-center gap-0.5',
+                        isDone ? 'text-[#16A34A]' : isProgress ? 'text-[#D97706]' : 'text-[#AAAAAA]',
+                      )}>
+                        {isDone ? <><CheckCircle2 size={10} /> Concluído</> : isProgress ? <><Clock size={10} /> Em andamento</> : 'Não iniciado'}
+                      </span>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => handleRemove(tool.type)}
+                    title="Remover ferramenta"
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-1 text-[#AAAAAA] hover:text-[#DC2626] transition-all"
+                  >
+                    <Trash2 size={11} />
+                  </button>
+                </div>
               );
             })}
           </div>

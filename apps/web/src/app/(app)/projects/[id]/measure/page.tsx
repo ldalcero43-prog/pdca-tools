@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { api } from '@/lib/api-client';
 import { ParetoEditor } from '@/components/tools/pareto/pareto-editor';
 import { cn } from '@/lib/utils';
-import { ArrowLeft, Plus, CheckCircle2, Clock } from 'lucide-react';
+import { ArrowLeft, Plus, CheckCircle2, Clock, Trash2 } from 'lucide-react';
 
 interface ToolDef {
   type: string;
@@ -76,6 +76,17 @@ export default function MeasurePage() {
     finally { setActivating(null); }
   }
 
+  async function handleRemove(toolType: string) {
+    const tool = MEASURE_TOOLS.find((t) => t.type === toolType);
+    if (!confirm(`Remover "${tool?.name}"? Os dados salvos serão perdidos.`)) return;
+    try {
+      await api.delete(`/projects/${projectId}/tools/${toolType}`);
+      setActivatedTools((prev) => { const s = new Set(prev); s.delete(toolType); return s; });
+      setToolDataMap((prev) => { const m = { ...prev }; delete m[toolType]; return m; });
+      if (selectedTool === toolType) setSelectedTool(null);
+    } catch (err) { console.error(err); }
+  }
+
   const ToolEditor = selectedTool ? TOOL_EDITORS[selectedTool] : null;
 
   if (loading) return <div className="p-8 text-sm text-[#888888]">Carregando ferramentas...</div>;
@@ -83,9 +94,12 @@ export default function MeasurePage() {
   if (selectedTool && ToolEditor) {
     return (
       <div className="flex flex-col h-full">
-        <div className="px-6 py-2.5 border-b border-[#E5E5E5] bg-[#FAFAFA] shrink-0">
+        <div className="flex items-center justify-between px-6 py-2.5 border-b border-[#E5E5E5] bg-[#FAFAFA] shrink-0">
           <button onClick={() => setSelectedTool(null)} className="flex items-center gap-1.5 text-xs text-[#555555] hover:text-[#111111] transition-colors">
             <ArrowLeft size={12} /> Voltar às ferramentas
+          </button>
+          <button onClick={() => handleRemove(selectedTool!)} className="flex items-center gap-1 text-[11px] text-[#AAAAAA] hover:text-[#DC2626] transition-colors">
+            <Trash2 size={11} /> Remover ferramenta
           </button>
         </div>
         <div className="flex-1 min-h-0">
@@ -142,27 +156,35 @@ export default function MeasurePage() {
               const isDone = status === 'COMPLETED' || status === 'DONE';
               const isProgress = status === 'IN_PROGRESS';
               return (
-                <button
-                  key={tool.type}
-                  onClick={() => setSelectedTool(tool.type)}
-                  className={cn(
-                    'text-left p-4 bg-white border transition-all hover:border-[#111111] hover:shadow-sm',
-                    isDone ? 'border-[#16A34A]/40' : isProgress ? 'border-[#D97706]/40' : 'border-[#E5E5E5]',
-                  )}
-                >
-                  <div className="flex items-start justify-between mb-1.5">
-                    <span className="text-xs font-semibold text-[#111111]">{tool.name}</span>
-                    {isDone ? <CheckCircle2 size={13} className="text-[#16A34A] shrink-0" />
-                      : isProgress ? <Clock size={13} className="text-[#D97706] shrink-0" /> : null}
-                  </div>
-                  <p className="text-[11px] text-[#888888] leading-relaxed">{tool.description}</p>
-                  <div className="flex items-center gap-3 mt-3">
-                    <span className={cn('text-[10px] font-medium', DIFFICULTY_COLORS[tool.difficulty])}>
-                      {DIFFICULTY_LABELS[tool.difficulty]}
-                    </span>
-                    <span className="text-[10px] text-[#AAAAAA]">{tool.estimatedDuration}</span>
-                  </div>
-                </button>
+                <div key={tool.type} className="relative group">
+                  <button
+                    onClick={() => setSelectedTool(tool.type)}
+                    className={cn(
+                      'w-full text-left p-4 bg-white border transition-all hover:border-[#111111] hover:shadow-sm',
+                      isDone ? 'border-[#16A34A]/40' : isProgress ? 'border-[#D97706]/40' : 'border-[#E5E5E5]',
+                    )}
+                  >
+                    <div className="flex items-start justify-between mb-1.5">
+                      <span className="text-xs font-semibold text-[#111111]">{tool.name}</span>
+                      {isDone ? <CheckCircle2 size={13} className="text-[#16A34A] shrink-0" />
+                        : isProgress ? <Clock size={13} className="text-[#D97706] shrink-0" /> : null}
+                    </div>
+                    <p className="text-[11px] text-[#888888] leading-relaxed">{tool.description}</p>
+                    <div className="flex items-center gap-3 mt-3">
+                      <span className={cn('text-[10px] font-medium', DIFFICULTY_COLORS[tool.difficulty])}>
+                        {DIFFICULTY_LABELS[tool.difficulty]}
+                      </span>
+                      <span className="text-[10px] text-[#AAAAAA]">{tool.estimatedDuration}</span>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => handleRemove(tool.type)}
+                    title="Remover ferramenta"
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-1 text-[#AAAAAA] hover:text-[#DC2626] transition-all"
+                  >
+                    <Trash2 size={11} />
+                  </button>
+                </div>
               );
             })}
           </div>

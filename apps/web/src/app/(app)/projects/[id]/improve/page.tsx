@@ -88,6 +88,17 @@ export default function ImprovePage() {
     finally { setActivating(null); }
   }
 
+  async function handleRemoveTool(toolType: string) {
+    const tool = IMPROVE_TOOLS.find((t) => t.type === toolType);
+    if (!confirm(`Remover "${tool?.name}"? Os dados salvos serão perdidos.`)) return;
+    try {
+      await api.delete(`/projects/${projectId}/tools/${toolType}`);
+      setActivatedTools((prev) => { const s = new Set(prev); s.delete(toolType); return s; });
+      setToolDataMap((prev) => { const m = { ...prev }; delete m[toolType]; return m; });
+      if (tab === toolType) setTab('kanban');
+    } catch (err) { console.error(err); }
+  }
+
   if (loading) return <div className="p-8 text-sm text-[#888888]">Carregando...</div>;
 
   const done = tasks.filter((t) => t.status === 'DONE').length;
@@ -109,20 +120,30 @@ export default function ImprovePage() {
           const isActive = activatedTools.has(tool.type);
           const status = toolStatuses[tool.type];
           return (
-            <button
-              key={tool.type}
-              onClick={() => isActive ? setTab(tool.type) : handleActivate(tool.type)}
-              disabled={activating === tool.type}
-              className={cn('flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap',
-                tab === tool.type ? 'border-[#111111] text-[#111111]' : 'border-transparent text-[#555555] hover:text-[#111111]'
+            <span key={tool.type} className="flex items-stretch">
+              <button
+                onClick={() => isActive ? setTab(tool.type) : handleActivate(tool.type)}
+                disabled={activating === tool.type}
+                className={cn('flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap',
+                  tab === tool.type ? 'border-[#111111] text-[#111111]' : 'border-transparent text-[#555555] hover:text-[#111111]'
+                )}
+              >
+                {!isActive && <Plus size={10} className="text-[#AAAAAA]" />}
+                {status === 'DONE' || status === 'COMPLETED' ? <CheckCircle2 size={11} className="text-[#16A34A]" /> : null}
+                {status === 'IN_PROGRESS' ? <Clock size={11} className="text-[#D97706]" /> : null}
+                {tool.name}
+                {activating === tool.type && '...'}
+              </button>
+              {isActive && (
+                <button
+                  onClick={() => handleRemoveTool(tool.type)}
+                  title="Remover ferramenta"
+                  className="px-1 py-2.5 text-[#CCCCCC] hover:text-[#DC2626] transition-colors border-b-2 border-transparent text-xs leading-none"
+                >
+                  ×
+                </button>
               )}
-            >
-              {!isActive && <Plus size={10} className="text-[#AAAAAA]" />}
-              {status === 'DONE' || status === 'COMPLETED' ? <CheckCircle2 size={11} className="text-[#16A34A]" /> : null}
-              {status === 'IN_PROGRESS' ? <Clock size={11} className="text-[#D97706]" /> : null}
-              {tool.name}
-              {activating === tool.type && '...'}
-            </button>
+            </span>
           );
         })}
 

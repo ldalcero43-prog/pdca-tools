@@ -317,6 +317,11 @@ const ROUTES: Array<{ method: string; pattern: string; fn: Handler }> = [
     return item;
   }},
 
+  { method: 'DELETE', pattern: '/projects/:id/tools/:toolType', fn: ([id, toolType]) => {
+    DB.save.tools(DB.tools().filter((t) => !(t.projectId === id && t.toolType === toolType)));
+    return {};
+  }},
+
   // Tasks
   { method: 'GET', pattern: '/projects/:id/tasks', fn: ([id]) => {
     const list = DB.tasks().filter((t) => t.projectId === id);
