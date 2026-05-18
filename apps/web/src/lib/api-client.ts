@@ -254,6 +254,11 @@ const ROUTES: Array<{ method: string; pattern: string; fn: Handler }> = [
     return buildProjectSummary(projects[idx]);
   }},
 
+  // Phases
+  { method: 'GET', pattern: '/projects/:id/phases', fn: ([id]) =>
+    DB.phases().filter((p) => p.projectId === id)
+  },
+
   // Milestones
   { method: 'GET', pattern: '/projects/:id/milestones', fn: ([id]) =>
     DB.milestones().filter((m) => m.projectId === id)
