@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useParams, usePathname, useRouter } from 'next/navigation';
 import { api } from '@/lib/api-client';
 import { cn, STATUS_LABELS } from '@/lib/utils';
-import { ChevronRight, ArrowLeft } from 'lucide-react';
+import { ChevronRight, ArrowLeft, Trash2 } from 'lucide-react';
 
 interface Project {
   id: string;
@@ -39,12 +39,25 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
   const router = useRouter();
   const projectId = params.id as string;
   const [project, setProject] = useState<Project | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     api.get<Project>(`/projects/${projectId}`)
       .then(setProject)
       .catch(() => router.push('/projects'));
   }, [projectId]);
+
+  async function handleDelete() {
+    setDeleting(true);
+    try {
+      await api.delete(`/projects/${projectId}`);
+      router.push('/projects');
+    } catch (err) {
+      console.error(err);
+      setDeleting(false);
+    }
+  }
 
   const basePath = `/projects/${projectId}`;
 
@@ -86,6 +99,33 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
             <span className="text-xs text-[#AAAAAA] border border-[#E5E5E5] px-2 py-0.5">
               {project.methodology}
             </span>
+            <div className="ml-auto">
+              {!showDeleteConfirm ? (
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="flex items-center gap-1 text-[11px] text-[#AAAAAA] hover:text-[#DC2626] transition-colors"
+                >
+                  <Trash2 size={11} /> Excluir projeto
+                </button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-[#DC2626]">Confirmar exclusão?</span>
+                  <button
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="px-2 py-0.5 bg-[#DC2626] text-white text-[11px] font-medium hover:bg-[#B91C1C] disabled:opacity-50 transition-colors"
+                  >
+                    {deleting ? 'Excluindo...' : 'Sim, excluir'}
+                  </button>
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="px-2 py-0.5 border border-[#E5E5E5] text-[11px] text-[#555555] hover:bg-[#F4F4F4] transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         )}
 

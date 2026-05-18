@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import { api } from '@/lib/api-client';
 import { ToolShell } from '@/components/tools/tool-shell';
 import { cn } from '@/lib/utils';
-import { Plus, Trash2, ChevronDown } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, ArrowRight, CheckCircle2 } from 'lucide-react';
 
 interface Why {
   id: string;
@@ -76,6 +76,8 @@ export function FiveWhysEditor({ projectId, toolData, onDataChange }: Props) {
   });
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [creatingTask, setCreatingTask] = useState(false);
+  const [taskCreated, setTaskCreated] = useState(false);
 
   const update = useCallback((patch: Partial<FiveWhysData>) => {
     setData((d) => {
@@ -107,6 +109,26 @@ export function FiveWhysEditor({ projectId, toolData, onDataChange }: Props) {
       console.error(err);
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleCreateDoTask() {
+    if (!data.rootCause.trim()) return;
+    setCreatingTask(true);
+    try {
+      await api.post(`/projects/${projectId}/tasks`, {
+        title: data.containmentAction.trim() || `Ação corretiva: ${data.rootCause.slice(0, 60)}`,
+        description: `Causa raiz identificada via 5 Porquês:\n\n"${data.rootCause}"\n\nProblema original: ${data.problem}`,
+        status: 'TODO',
+        priority: 'HIGH',
+        problemRef: data.rootCause,
+      });
+      setTaskCreated(true);
+      setTimeout(() => setTaskCreated(false), 3000);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setCreatingTask(false);
     }
   }
 
@@ -213,6 +235,34 @@ export function FiveWhysEditor({ projectId, toolData, onDataChange }: Props) {
             className="w-full px-3 py-2.5 border border-[#E5E5E5] bg-white text-sm text-[#111111] placeholder-[#AAAAAA] focus:outline-none focus:border-[#111111] transition-colors resize-none"
           />
         </div>
+
+        {/* Link to DO */}
+        {data.rootCause.trim() && (
+          <div className="border border-[#E5E5E5] bg-[#FAFAFA] p-4 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-[11px] font-semibold text-[#111111] mb-0.5">Enviar para o DO</p>
+              <p className="text-[11px] text-[#888888]">
+                Cria uma tarefa no Kanban com a causa raiz como referência e a ação corretiva como título.
+              </p>
+            </div>
+            <button
+              onClick={handleCreateDoTask}
+              disabled={creatingTask || taskCreated}
+              className={cn(
+                'shrink-0 flex items-center gap-1.5 px-4 py-2 text-xs font-medium transition-colors',
+                taskCreated
+                  ? 'bg-[#F0FDF4] text-[#16A34A] border border-[#BBF7D0]'
+                  : 'bg-[#111111] text-white hover:bg-[#333333] disabled:opacity-50',
+              )}
+            >
+              {taskCreated ? (
+                <><CheckCircle2 size={12} /> Tarefa criada!</>
+              ) : (
+                <><ArrowRight size={12} /> {creatingTask ? 'Criando...' : 'Criar tarefa no DO'}</>
+              )}
+            </button>
+          </div>
+        )}
       </div>
     </ToolShell>
   );

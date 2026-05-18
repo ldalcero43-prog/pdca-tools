@@ -274,11 +274,25 @@ const ROUTES: Array<{ method: string; pattern: string; fn: Handler }> = [
     return t;
   }},
 
+  { method: 'DELETE', pattern: '/projects/:id', fn: ([id]) => {
+    DB.save.projects(DB.projects().filter((p) => p.id !== id));
+    DB.save.phases(DB.phases().filter((p) => p.projectId !== id));
+    DB.save.tools(DB.tools().filter((t) => t.projectId !== id));
+    DB.save.tasks(DB.tasks().filter((t) => t.projectId !== id));
+    DB.save.kpis(DB.kpis().filter((k) => k.projectId !== id));
+    DB.save.milestones(DB.milestones().filter((m) => m.projectId !== id));
+    return {};
+  }},
+
   { method: 'PUT', pattern: '/projects/:id/tools/:toolType', fn: ([id, toolType], body) => {
     const PHASE_MAP: Record<string, string> = {
-      FIVE_WHYS: 'PLAN', ISHIKAWA: 'PLAN', GUT_MATRIX: 'PLAN', SWOT: 'PLAN',
-      SIPOC: 'PLAN', FIVE_W2H: 'PLAN', PARETO: 'PLAN', FMEA: 'PLAN',
-      KANBAN: 'DO', ACT_STANDARDIZATION: 'ACT',
+      // PLAN — diagnosis & process mapping
+      FIVE_WHYS: 'PLAN', ISHIKAWA: 'PLAN', SWOT: 'PLAN',
+      SIPOC: 'PLAN', PARETO: 'PLAN', FLOWCHART: 'PLAN',
+      // DO — action planning & execution
+      GUT_MATRIX: 'DO', FIVE_W2H: 'DO', FMEA: 'DO', KANBAN: 'DO',
+      // ACT
+      ACT_STANDARDIZATION: 'ACT',
     };
     const tools = DB.tools();
     const idx = tools.findIndex((t) => t.projectId === id && t.toolType === toolType);

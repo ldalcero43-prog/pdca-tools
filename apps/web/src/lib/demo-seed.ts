@@ -94,9 +94,9 @@ export function seedDemoProject(userId: string, orgId: string): string {
     },
   });
 
-  // GUT Matrix
+  // GUT Matrix — now in DO phase
   tools.push({
-    id: uid(), projectId: projId, toolType: 'GUT_MATRIX', phase: 'PLAN', status: 'DONE', updatedAt: daysAgo(98),
+    id: uid(), projectId: projId, toolType: 'GUT_MATRIX', phase: 'DO', status: 'DONE', updatedAt: daysAgo(98),
     data: {
       problems: [
         { id: uid(), description: 'Falta de integração ERP-Fiscal (emissão manual de NF)', gravity: 5, urgency: 5, tendency: 5, score: 125 },
@@ -134,15 +134,29 @@ export function seedDemoProject(userId: string, orgId: string): string {
     },
   });
 
-  // 5W2H
+  // 5W2H — now in DO phase
   tools.push({
-    id: uid(), projectId: projId, toolType: 'FIVE_W2H', phase: 'PLAN', status: 'DONE', updatedAt: daysAgo(90),
+    id: uid(), projectId: projId, toolType: 'FIVE_W2H', phase: 'DO', status: 'DONE', updatedAt: daysAgo(90),
     data: {
       actions: [
         { id: uid(), what: 'Integrar ERP com módulo fiscal para emissão automática de NF', why: 'Eliminar o principal gargalo: emissão manual leva 3 dias a mais', where: 'Setor de TI + Expedição, planta Guarulhos', when: daysFromNow(-80), who: 'Lucas Mendes (TI) + Ana Paula (Expedição)', how: 'Configuração do módulo SAP FI integrado ao SD com aprovação automática para pedidos até R$ 50k', howMuch: 'R$ 65.000 (CAPEX)' },
         { id: uid(), what: 'Treinar 4 operadores adicionais para emissão de NF', why: 'Eliminar gargalo de pessoa única — risco operacional e de turnover', where: 'Sala de treinamento + ERP em ambiente de homologação', when: daysFromNow(-60), who: 'RH + Supervisor de Expedição (Carlos Lima)', how: 'Treinamento ERP (8h) + simulação de emissão + certificação interna', howMuch: 'R$ 8.000 (OPEX — horas de treinador + material)' },
         { id: uid(), what: 'Redesenhar layout do armazém — área de separação próxima à doca', why: 'Reduzir distância percorrida em 60% e eliminar cruzamento de fluxos', where: 'Armazém planta Guarulhos', when: daysFromNow(-30), who: 'Rodrigo Faria (Engenharia) + Equipe de Expedição', how: 'Reposicionamento de prateleiras, demarcação de piso, sinalização visual', howMuch: 'R$ 12.000 (CAPEX)' },
         { id: uid(), what: 'Criar SOP de expedição e implantar reunião diária de indicadores', why: 'Padronizar o processo e tornar desvios visíveis em tempo real', where: 'Expedição — quadro de gestão visual na entrada do armazém', when: daysFromNow(15), who: 'Ana Paula (Expedição) + Lean Specialist', how: 'Documentar SOP no sistema de qualidade ISO + reunião 7h15 com quadro físico (lead time, entregas dia)', howMuch: 'R$ 4.000 (OPEX — design + impressão de quadro)' },
+      ],
+    },
+  });
+
+  // FMEA — DO phase, filled with real data
+  tools.push({
+    id: uid(), projectId: projId, toolType: 'FMEA', phase: 'DO', status: 'IN_PROGRESS', updatedAt: daysAgo(85),
+    data: {
+      scope: 'Processo de expedição — emissão de NF e carregamento — planta Guarulhos',
+      rows: [
+        { id: uid(), process: 'Emissão de Nota Fiscal', failureMode: 'NF emitida com dados incorretos (CNPJ, valor, produto)', failureEffect: 'Entrega bloqueada pela transportadora — retrabalho de 1–2 dias', severity: 8, failureCause: 'Cadastro de cliente desatualizado no ERP', occurrence: 4, currentControls: 'Revisão manual pelo supervisor antes do envio', detection: 5, rpn: 160, recommendedAction: 'Bloqueio sistêmico de pedido se cadastro sem validação há >60 dias', responsible: 'Lucas Mendes', targetDate: daysFromNow(-50), status: 'closed' },
+        { id: uid(), process: 'Separação / Picking', failureMode: 'Produto errado separado para o pedido', failureEffect: 'Cliente recebe produto incorreto — devolução + nova expedição', severity: 7, failureCause: 'Etiqueta de localização de prateleira ilegível ou ausente', occurrence: 3, currentControls: 'Conferência manual na doca antes do carregamento', detection: 4, rpn: 84, recommendedAction: 'Implantar etiquetagem de endereçamento de prateleiras com código de barras', responsible: 'Rodrigo Faria', targetDate: daysFromNow(-20), status: 'in_progress' },
+        { id: uid(), process: 'Carregamento', failureMode: 'Carga danificada durante carregamento', failureEffect: 'Avaria de produto — custo de reposição + atraso de entrega', severity: 6, failureCause: 'Empilhadeira sem manutenção preventiva', occurrence: 2, currentControls: 'Inspeção visual antes do carregamento', detection: 3, rpn: 36, recommendedAction: 'Incluir empilhadeiras no plano de manutenção preventiva mensal', responsible: 'Carlos Lima', targetDate: daysFromNow(10), status: 'open' },
+        { id: uid(), process: 'Emissão de Nota Fiscal', failureMode: 'Sistema ERP indisponível — emissão de NF travada', failureEffect: 'Paralisia total da expedição — lead time aumenta em 1 dia a cada hora de indisponibilidade', severity: 9, failureCause: 'Falta de redundância no servidor do módulo fiscal', occurrence: 2, currentControls: 'Nenhum — sem plano de contingência documentado', detection: 8, rpn: 144, recommendedAction: 'Definir SOP de contingência (emissão manual emergencial) e responsável de plantão', responsible: 'Ana Paula Silva', targetDate: daysFromNow(5), status: 'open' },
       ],
     },
   });
@@ -166,16 +180,16 @@ export function seedDemoProject(userId: string, orgId: string): string {
 
   // ── Tasks ────────────────────────────────────────────────────────────────
   const tasks = dbGet<any[]>('pdca_tasks', []);
-  const taskDefs = [
-    { title: 'Mapear o processo atual de expedição (AS-IS)', status: 'DONE', priority: 'HIGH', assignee: 'Ana Paula Silva', checklist: [{ id: uid(), text: 'Entrevistar operadores', done: true }, { id: uid(), text: 'Cronometrar cada etapa', done: true }, { id: uid(), text: 'Registrar no fluxograma', done: true }] },
-    { title: 'Integrar ERP com módulo fiscal (NF automática)', status: 'DONE', priority: 'CRITICAL', assignee: 'Lucas Mendes', checklist: [{ id: uid(), text: 'Levantar requisitos com fiscal', done: true }, { id: uid(), text: 'Configurar integração SAP FI/SD', done: true }, { id: uid(), text: 'Homologar com usuários', done: true }, { id: uid(), text: 'Go-live e monitoramento', done: true }] },
-    { title: 'Treinar 4 operadores para emissão de NF', status: 'DONE', priority: 'HIGH', assignee: 'Carlos Lima', checklist: [{ id: uid(), text: 'Agendar sala + ERP homologação', done: true }, { id: uid(), text: 'Conduzir treinamento (8h)', done: true }, { id: uid(), text: 'Aplicar avaliação prática', done: true }] },
-    { title: 'Redesenhar layout do armazém', status: 'DONE', priority: 'MEDIUM', assignee: 'Rodrigo Faria', checklist: [{ id: uid(), text: 'Elaborar planta proposta', done: true }, { id: uid(), text: 'Aprovar com segurança', done: true }, { id: uid(), text: 'Executar movimentação de prateleiras', done: true }] },
-    { title: 'Criar SOP-EXP-001 (emissão de NF)', status: 'IN_PROGRESS', priority: 'HIGH', assignee: 'Ana Paula Silva', checklist: [{ id: uid(), text: 'Rascunho do SOP', done: true }, { id: uid(), text: 'Revisão com equipe', done: false }, { id: uid(), text: 'Aprovação na qualidade', done: false }] },
-    { title: 'Implantar reunião diária + quadro de gestão visual', status: 'IN_PROGRESS', priority: 'MEDIUM', assignee: 'Ana Paula Silva', checklist: [{ id: uid(), text: 'Definir indicadores do quadro', done: true }, { id: uid(), text: 'Instalar quadro no armazém', done: false }, { id: uid(), text: 'Conduzir 1ª reunião piloto', done: false }] },
-    { title: 'Auditar processo com lead time ≤ 10 dias', status: 'TODO', priority: 'MEDIUM', assignee: 'Rodrigo Faria', checklist: [] },
-    { title: 'Apresentar resultados finais à diretoria', status: 'TODO', priority: 'HIGH', assignee: 'Carlos Lima', checklist: [] },
-    { title: 'Submeter projeto ao banco de projetos corporativos', status: 'BACKLOG', priority: 'LOW', assignee: 'Ana Paula Silva', checklist: [] },
+  const taskDefs: Array<{ title: string; status: string; priority: string; assignee: string; dueDate: string; problemRef?: string; checklist: any[] }> = [
+    { title: 'Mapear o processo atual de expedição (AS-IS)', status: 'DONE', priority: 'HIGH', assignee: 'Ana Paula Silva', dueDate: daysAgo(100), checklist: [{ id: uid(), text: 'Entrevistar operadores', done: true }, { id: uid(), text: 'Cronometrar cada etapa', done: true }, { id: uid(), text: 'Registrar no fluxograma', done: true }] },
+    { title: 'Integrar ERP com módulo fiscal (NF automática)', status: 'DONE', priority: 'CRITICAL', assignee: 'Lucas Mendes', dueDate: daysAgo(75), problemRef: 'ERP sem integração com módulo fiscal — emissão manual de NF causa 3 dias de atraso extra (causa raiz do 5 Porquês)', checklist: [{ id: uid(), text: 'Levantar requisitos com fiscal', done: true }, { id: uid(), text: 'Configurar integração SAP FI/SD', done: true }, { id: uid(), text: 'Homologar com usuários', done: true }, { id: uid(), text: 'Go-live e monitoramento', done: true }] },
+    { title: 'Treinar 4 operadores para emissão de NF', status: 'DONE', priority: 'HIGH', assignee: 'Carlos Lima', dueDate: daysAgo(60), problemRef: 'Apenas 1 operador habilitado por turno — risco operacional e gargalo de pessoa única', checklist: [{ id: uid(), text: 'Agendar sala + ERP homologação', done: true }, { id: uid(), text: 'Conduzir treinamento (8h)', done: true }, { id: uid(), text: 'Aplicar avaliação prática', done: true }] },
+    { title: 'Redesenhar layout do armazém', status: 'DONE', priority: 'MEDIUM', assignee: 'Rodrigo Faria', dueDate: daysAgo(40), problemRef: 'Layout inadequado do armazém — área de separação distante da doca aumenta tempo de deslocamento', checklist: [{ id: uid(), text: 'Elaborar planta proposta', done: true }, { id: uid(), text: 'Aprovar com segurança', done: true }, { id: uid(), text: 'Executar movimentação de prateleiras', done: true }] },
+    { title: 'Criar SOP-EXP-001 (emissão de NF)', status: 'IN_PROGRESS', priority: 'HIGH', assignee: 'Ana Paula Silva', dueDate: daysFromNow(20), checklist: [{ id: uid(), text: 'Rascunho do SOP', done: true }, { id: uid(), text: 'Revisão com equipe', done: false }, { id: uid(), text: 'Aprovação na qualidade', done: false }] },
+    { title: 'Implantar reunião diária + quadro de gestão visual', status: 'IN_PROGRESS', priority: 'MEDIUM', assignee: 'Ana Paula Silva', dueDate: daysFromNow(35), checklist: [{ id: uid(), text: 'Definir indicadores do quadro', done: true }, { id: uid(), text: 'Instalar quadro no armazém', done: false }, { id: uid(), text: 'Conduzir 1ª reunião piloto', done: false }] },
+    { title: 'Auditar processo com lead time ≤ 10 dias', status: 'TODO', priority: 'MEDIUM', assignee: 'Rodrigo Faria', dueDate: daysFromNow(50), checklist: [] },
+    { title: 'Apresentar resultados finais à diretoria', status: 'TODO', priority: 'HIGH', assignee: 'Carlos Lima', dueDate: daysFromNow(60), checklist: [] },
+    { title: 'Submeter projeto ao banco de projetos corporativos', status: 'BACKLOG', priority: 'LOW', assignee: 'Ana Paula Silva', dueDate: daysFromNow(75), checklist: [] },
   ];
 
   taskDefs.forEach((def, i) => {
@@ -187,9 +201,11 @@ export function seedDemoProject(userId: string, orgId: string): string {
       status: def.status,
       priority: def.priority,
       assigneeName: def.assignee,
+      dueDate: def.dueDate,
+      problemRef: def.problemRef || null,
       checklist: def.checklist,
       completionPercentage: def.status === 'DONE' ? 100 : def.status === 'IN_PROGRESS' ? 50 : 0,
-      createdAt: daysAgo(110 - i * 5),
+      createdAt: daysAgo(115 - i * 5),
       updatedAt: daysAgo(Math.max(1, 30 - i * 3)),
       ...(def.status === 'DONE' ? { completedAt: daysAgo(30 - i * 2) } : {}),
     });
@@ -264,15 +280,15 @@ export function seedDemoProject(userId: string, orgId: string): string {
   // ── Milestones ───────────────────────────────────────────────────────────
   const milestones = dbGet<any[]>('pdca_milestones', []);
   const milestoneDefs = [
-    { title: 'Diagnóstico e Mapeamento AS-IS concluído', status: 'COMPLETED', date: daysAgo(100) },
-    { title: 'Integração ERP-Fiscal implementada e validada', status: 'COMPLETED', date: daysAgo(75) },
-    { title: 'Treinamento de operadores concluído', status: 'COMPLETED', date: daysAgo(55) },
-    { title: 'Redesign de layout implementado', status: 'COMPLETED', date: daysAgo(35) },
-    { title: 'Meta de lead time ≤ 10 dias atingida', status: 'COMPLETED', date: daysAgo(7) },
-    { title: 'SOPs aprovados e publicados no sistema de qualidade', status: 'IN_PROGRESS', date: daysFromNow(20) },
-    { title: 'Gestão visual implantada e reunião diária estabilizada', status: 'PENDING', date: daysFromNow(35) },
-    { title: 'Apresentação de resultados à diretoria', status: 'PENDING', date: daysFromNow(50) },
-    { title: 'Encerramento formal e transferência para rotina', status: 'PENDING', date: daysFromNow(75) },
+    { title: 'Diagnóstico e Mapeamento AS-IS concluído', status: 'COMPLETED', dueDate: daysAgo(100) },
+    { title: 'Integração ERP-Fiscal implementada e validada', status: 'COMPLETED', dueDate: daysAgo(75) },
+    { title: 'Treinamento de operadores concluído', status: 'COMPLETED', dueDate: daysAgo(55) },
+    { title: 'Redesign de layout implementado', status: 'COMPLETED', dueDate: daysAgo(35) },
+    { title: 'Meta de lead time ≤ 10 dias atingida', status: 'COMPLETED', dueDate: daysAgo(7) },
+    { title: 'SOPs aprovados e publicados no sistema de qualidade', status: 'IN_PROGRESS', dueDate: daysFromNow(20) },
+    { title: 'Gestão visual implantada e reunião diária estabilizada', status: 'PENDING', dueDate: daysFromNow(35) },
+    { title: 'Apresentação de resultados à diretoria', status: 'PENDING', dueDate: daysFromNow(50) },
+    { title: 'Encerramento formal e transferência para rotina', status: 'PENDING', dueDate: daysFromNow(75) },
   ];
   milestoneDefs.forEach((def) => {
     milestones.push({ id: uid(), projectId: projId, ...def, createdAt: daysAgo(119) });

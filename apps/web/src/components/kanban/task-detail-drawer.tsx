@@ -23,6 +23,7 @@ interface TaskDetail {
   opexEstimate?: number | null;
   completionPercentage: number;
   checklist?: ChecklistItem[];
+  problemRef?: string | null;
 }
 
 const STATUSES = [
@@ -265,6 +266,29 @@ export function TaskDetailDrawer({ taskId, projectId, onClose, onUpdated, onDele
                   <Plus size={12} className="text-[#888888]" />
                 </button>
               </div>
+            </div>
+
+            {/* Problem ref (from 5 Whys) */}
+            {task.problemRef && (
+              <div className="border border-[#E5E5E5] bg-[#FFFBEB] p-3">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-[#D97706] mb-1">
+                  Problema de origem (5 Porquês)
+                </p>
+                <p className="text-xs text-[#555555] leading-relaxed">{task.problemRef}</p>
+              </div>
+            )}
+
+            {/* Problem ref — manual input */}
+            <div>
+              <label className="block text-[10px] font-semibold uppercase tracking-widest text-[#888888] mb-1.5">
+                Problema Relacionado
+              </label>
+              <input
+                value={task.problemRef || ''}
+                onChange={(e) => updateTask({ problemRef: e.target.value || null })}
+                placeholder="Ex: causa raiz identificada no 5 Porquês..."
+                className="w-full px-2.5 py-2 border border-[#E5E5E5] bg-white text-xs text-[#111111] placeholder-[#AAAAAA] focus:outline-none focus:border-[#111111] transition-colors"
+              />
             </div>
 
             {/* Delete */}
